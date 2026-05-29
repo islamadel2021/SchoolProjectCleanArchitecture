@@ -26,7 +26,7 @@ namespace SchoolProject.Api.Controllers
         {
             var response = await Mediator.Send(query);
             return Ok(response);
-        } 
+        }
         [HttpGet(Router.StudentRouting.GetByID)]
         public async Task<IActionResult> GetStudentByID([FromRoute] int id)
         {
