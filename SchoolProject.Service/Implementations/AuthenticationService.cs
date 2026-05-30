@@ -48,6 +48,7 @@ namespace SchoolProject.Service.Implementations
 
         public async Task<JwtAuthResult> GetJWTToken(User user)
         {
+
             var (jwtToken, accessToken) = await GenerateJWTToken(user);
             var refreshToken = GetRefreshToken(user.UserName);
             var userRefreshToken = new UserRefreshToken
