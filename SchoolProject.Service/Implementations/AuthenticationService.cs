@@ -9,6 +9,7 @@ using SchoolProject.Data.Results;
 using SchoolProject.Infrustructure.Abstracts;
 using SchoolProject.Infrustructure.Data;
 using SchoolProject.Service.Abstracts;
+using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -25,7 +26,6 @@ namespace SchoolProject.Service.Implementations
         private readonly ApplicationDBContext _applicationDBContext;
         private readonly IEncryptionProvider _encryptionProvider;
         #endregion 
-
         #region Constructors
         public AuthenticationService(JwtSettings jwtSettings,
                                      IRefreshTokenRepository refreshTokenRepository,
@@ -35,10 +35,10 @@ namespace SchoolProject.Service.Implementations
         {
             _jwtSettings = jwtSettings;
             _refreshTokenRepository = refreshTokenRepository;
-            _userManager= userManager;
-            _emailsService= emailsService;
-            _applicationDBContext=applicationDBContext;
-            _encryptionProvider=new GenerateEncryptionProvider("8a4dcaaec64d412380fe4b02193cd26f");
+            _userManager = userManager;
+            _emailsService = emailsService;
+            _applicationDBContext = applicationDBContext;
+            _encryptionProvider = new GenerateEncryptionProvider("8a4dcaaec64d412380fe4b02193cd26f");
         }
 
 
@@ -48,24 +48,24 @@ namespace SchoolProject.Service.Implementations
 
         public async Task<JwtAuthResult> GetJWTToken(User user)
         {
-            var (jwtToken, accessToken) =await GenerateJWTToken(user);
+            var (jwtToken, accessToken) = await GenerateJWTToken(user);
             var refreshToken = GetRefreshToken(user.UserName);
             var userRefreshToken = new UserRefreshToken
             {
                 AddedTime = DateTime.Now,
-                ExpiryDate=DateTime.Now.AddDays(_jwtSettings.RefreshTokenExpireDate),
-                IsUsed=true,
-                IsRevoked=false,
-                JwtId=jwtToken.Id,
-                RefreshToken=refreshToken.TokenString,
-                Token=accessToken,
-                UserId=user.Id
+                ExpiryDate = DateTime.Now.AddDays(_jwtSettings.RefreshTokenExpireDate),
+                IsUsed = true,
+                IsRevoked = false,
+                JwtId = jwtToken.Id,
+                RefreshToken = refreshToken.TokenString,
+                Token = accessToken,
+                UserId = user.Id
             };
             await _refreshTokenRepository.AddAsync(userRefreshToken);
 
             var response = new JwtAuthResult();
             response.refreshToken = refreshToken;
-            response.AccessToken=accessToken;
+            response.AccessToken = accessToken;
             return response;
         }
 
@@ -87,8 +87,8 @@ namespace SchoolProject.Service.Implementations
             var refreshToken = new RefreshToken
             {
                 ExpireAt = DateTime.Now.AddDays(_jwtSettings.RefreshTokenExpireDate),
-                UserName= username,
-                TokenString=GenerateRefreshToken()
+                UserName = username,
+                TokenString = GenerateRefreshToken()
             };
             return refreshToken;
         }
@@ -123,11 +123,11 @@ namespace SchoolProject.Service.Implementations
         {
             var (jwtSecurityToken, newToken) = await GenerateJWTToken(user);
             var response = new JwtAuthResult();
-            response.AccessToken=newToken;
+            response.AccessToken = newToken;
             var refreshTokenResult = new RefreshToken();
-            refreshTokenResult.UserName=jwtToken.Claims.FirstOrDefault(x => x.Type==nameof(UserClaimModel.UserName)).Value;
-            refreshTokenResult.TokenString=refreshToken;
-            refreshTokenResult.ExpireAt=(DateTime)expiryDate;
+            refreshTokenResult.UserName = jwtToken.Claims.FirstOrDefault(x => x.Type == nameof(UserClaimModel.UserName)).Value;
+            refreshTokenResult.TokenString = refreshToken;
+            refreshTokenResult.ExpireAt = (DateTime)expiryDate;
             response.refreshToken = refreshTokenResult;
             return response;
 
@@ -160,7 +160,7 @@ namespace SchoolProject.Service.Implementations
             {
                 var validator = handler.ValidateToken(accessToken, parameters, out SecurityToken validatedToken);
 
-                if (validator==null)
+                if (validator == null)
                 {
                     return "InvalidToken";
                 }
@@ -179,27 +179,27 @@ namespace SchoolProject.Service.Implementations
             {
                 return ("AlgorithmIsWrong", null);
             }
-            if (jwtToken.ValidTo>DateTime.UtcNow)
+            if (jwtToken.ValidTo > DateTime.UtcNow)
             {
                 return ("TokenIsNotExpired", null);
             }
 
             //Get User
 
-            var userId = jwtToken.Claims.FirstOrDefault(x => x.Type==nameof(UserClaimModel.Id)).Value;
+            var userId = jwtToken.Claims.FirstOrDefault(x => x.Type == nameof(UserClaimModel.Id)).Value;
             var userRefreshToken = await _refreshTokenRepository.GetTableNoTracking()
-                                             .FirstOrDefaultAsync(x => x.Token==accessToken&&
-                                                                     x.RefreshToken==refreshToken&&
-                                                                     x.UserId==int.Parse(userId));
+                                             .FirstOrDefaultAsync(x => x.Token == accessToken &&
+                                                                     x.RefreshToken == refreshToken &&
+                                                                     x.UserId == int.Parse(userId));
             if (userRefreshToken == null)
             {
                 return ("RefreshTokenIsNotFound", null);
             }
 
-            if (userRefreshToken.ExpiryDate<DateTime.UtcNow)
+            if (userRefreshToken.ExpiryDate < DateTime.UtcNow)
             {
-                userRefreshToken.IsRevoked=true;
-                userRefreshToken.IsUsed=false;
+                userRefreshToken.IsRevoked = true;
+                userRefreshToken.IsUsed = false;
                 await _refreshTokenRepository.UpdateAsync(userRefreshToken);
                 return ("RefreshTokenIsExpired", null);
             }
@@ -209,7 +209,7 @@ namespace SchoolProject.Service.Implementations
 
         public async Task<string> ConfirmEmail(int? userId, string? code)
         {
-            if (userId==null||code==null)
+            if (userId == null || code == null)
                 return "ErrorWhenConfirmEmail";
             var user = await _userManager.FindByIdAsync(userId.ToString());
             var confirmEmail = await _userManager.ConfirmEmailAsync(user, code);
@@ -226,7 +226,7 @@ namespace SchoolProject.Service.Implementations
                 //user
                 var user = await _userManager.FindByEmailAsync(Email);
                 //user not Exist => not found
-                if (user==null)
+                if (user == null)
                     return "UserNotFound";
                 //Generate Random Number
 
@@ -237,11 +237,11 @@ namespace SchoolProject.Service.Implementations
                 var randomNumber = new string(Enumerable.Repeat(chars, 6).Select(s => s[random.Next(s.Length)]).ToArray());
 
                 //update User In Database Code
-                user.Code= randomNumber;
+                user.Code = randomNumber;
                 var updateResult = await _userManager.UpdateAsync(user);
                 if (!updateResult.Succeeded)
                     return "ErrorInUpdateUser";
-                var message = "Code To Reset Passsword : "+user.Code;
+                var message = "Code To Reset Passsword : " + user.Code;
                 //Send Code To  Email 
                 await _emailsService.SendEmail(user.Email, message, "Reset Password");
                 await trans.CommitAsync();
@@ -260,12 +260,12 @@ namespace SchoolProject.Service.Implementations
             //user
             var user = await _userManager.FindByEmailAsync(Email);
             //user not Exist => not found
-            if (user==null)
+            if (user == null)
                 return "UserNotFound";
             //Decrept Code From Database User Code
             var userCode = user.Code;
             //Equal With Code
-            if (userCode==Code) return "Success";
+            if (userCode == Code) return "Success";
             return "Failed";
         }
 
@@ -277,7 +277,7 @@ namespace SchoolProject.Service.Implementations
                 //Get User
                 var user = await _userManager.FindByEmailAsync(Email);
                 //user not Exist => not found
-                if (user==null)
+                if (user == null)
                     return "UserNotFound";
                 await _userManager.RemovePasswordAsync(user);
                 if (!await _userManager.HasPasswordAsync(user))
